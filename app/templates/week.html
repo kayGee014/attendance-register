@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intern attendance</title>
+<style>
+:root{--bg:#eef1ee;--ink:#17261f;--mute:#5d6e65;--line:#cfd8d2;--g:#1d5c47;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+header{background:var(--g);color:#fff;padding:20px 24px}
+header h1{margin:0;font-size:1.35rem;font-weight:600}
+header p{margin:2px 0 0;opacity:.8;font-size:.9rem}
+main{max-width:1000px;margin:24px auto;padding:0 16px}
+.bar{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.bar h2{margin:0;font-size:1.1rem;flex:1}
+.bar a{color:var(--g);text-decoration:none;font-weight:600;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.msg{background:#dcebe3;border-left:4px solid var(--g);padding:10px 14px;margin-bottom:14px}
+.lock{background:#fff3d6;border-left:4px solid #b8860b;padding:10px 14px;margin-bottom:14px}
+.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{font-weight:600;font-size:.85rem;color:var(--mute);white-space:nowrap}
+td small{display:block;color:var(--mute)}
+select,input[type=text]{width:100%;padding:6px;border:1px solid var(--line);border-radius:5px;font:inherit;background:#fff}
+select:focus,input:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--g);outline-offset:1px}
+select.P{background:#e4f1ea}select.R{background:#e0ecf6}select.L{background:#f3ecd9}
+select.S{background:#f6e3e3}select.A{background:#f2c9c9}select.H{background:#e6e6e6}
+.actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+button{padding:10px 18px;border-radius:6px;border:1px solid var(--g);font:inherit;font-weight:600;cursor:pointer;background:#fff;color:var(--g)}
+button.primary{background:var(--g);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+</style></head><body>
+<header><h1>Intern attendance</h1><p>Signed in as {{ mgr.Name }}</p></header>
+<main>
+{% with m = get_flashed_messages() %}{% for x in m %}<div class="msg">{{ x }}</div>{% endfor %}{% endwith %}
+<div class="bar">
+  <a href="{{ url_for('week', week=prev) }}">Previous week</a>
+  <h2>Week of {{ start.strftime('%d %B %Y') }}</h2>
+  <a href="{{ url_for('week', week=next) }}">Next week</a>
+</div>
+{% if locked %}<div class="lock">This week has been submitted and is locked. Ask an administrator to unlock it for corrections.</div>{% endif %}
+<form method="post">
+<input type="hidden" name="week" value="{{ start }}">
+<div class="wrap"><table>
+<thead><tr><th>Intern</th>{% for d in days %}<th>{{ d.strftime('%a %d %b') }}</th>{% endfor %}<th>Comment</th></tr></thead>
+<tbody>
+{% for i in interns %}{% set s = saved[i.InternId] %}
+<tr><td>{{ i.Name }}<small>{{ i.Programme }}</small></td>
+{% for d in days %}{% set cur = s.codes.get(d|string, 'P') %}
+<td><select name="s_{{ i.InternId }}_{{ loop.index0 }}" class="{{ cur }}" aria-label="{{ i.Name }} {{ d.strftime('%A') }}" {{ 'disabled' if locked }} onchange="this.className=this.value">
+{% for code, label in statuses %}<option value="{{ code }}" {{ 'selected' if cur == code }}>{{ label }}</option>{% endfor %}
+</select></td>{% endfor %}
+<td><input type="text" name="c_{{ i.InternId }}" maxlength="500" value="{{ s.wk.Comment or '' if s.wk }}" aria-label="Comment for {{ i.Name }}" {{ 'disabled' if locked }}></td></tr>
+{% endfor %}
+</tbody></table></div>
+<div class="actions">
+  <button name="action" value="draft" {{ 'disabled' if locked }}>Save draft</button>
+  <button name="action" value="submit" class="primary" {{ 'disabled' if locked }}>Submit week</button>
+</div>
+</form></main></body></html>
